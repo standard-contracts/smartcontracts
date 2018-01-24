@@ -1,6 +1,7 @@
 const BeeToken = artifacts.require("./BeeToken.sol");
 const BeeTokenOffering = artifacts.require("./BeeTokenOffering.sol");
 const BeePayments = artifacts.require("./BeePayments.sol");
+const BeeReputation = artifacts.require("./BeeReputation.sol");
 
 module.exports = function (deployer, network, accounts) {
     console.log(`Accounts: ${accounts}`);
@@ -43,6 +44,15 @@ module.exports = function (deployer, network, accounts) {
             return BeePayments.deployed().then(instance => {
                 beePayments = instance;
                 console.log(`BeePayments deployed at \x1b[36m${instance.address}\x1b[0m`)
+            })
+        })
+    }).then(() => {
+        return deployer.deploy(
+            BeeReputation, { from: owner }
+        ).then(() => {
+            return BeeReputation.deployed().then(instance => {
+                beeReputation = instance;
+                console.log(`BeeReputation deployed at \x1b[36m${instance.address}\x1b[0m`)
             })
         })
     });
