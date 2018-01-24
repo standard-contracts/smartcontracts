@@ -2,13 +2,18 @@ var BeeReputation = artifacts.require("./BeeReputation.sol");
 var BeeToken = artifacts.require("./BeeToken.sol");
 var util = require("./util.js");
 
+<<<<<<< HEAD
 
 contract('BeeReputation Test', function (accounts) {
+=======
+contract('BeeReputation Dispatch Test', function (accounts) {
+>>>>>>> Init commit for BeeReputation
     // account[0] points to the owner on the testRPC setup
     var owner = accounts[0];
     var user1 = accounts[1];
     var user2 = accounts[2];
     var user3 = accounts[3];
+<<<<<<< HEAD
     var sudoPlatform = accounts[4];
     var tokenOwner = accounts[5];
     var tokenPrice = 10000000000000000000;
@@ -121,4 +126,15 @@ contract('BeeReputation Test', function (accounts) {
     //TODO: should not allow non-admins/owner update scores
     //TODO: should allow admin to update platform rep scores
     //TODO: should not allow admins to update other platforms
+=======
+
+    beforeEach(async function () {
+        token = await BeeToken.new(user1, { from: owner });
+        reputation = await BeeReputation.new();
+    });
+
+    it("Should pass", async function() {
+        assert(true);
+    })
+>>>>>>> Init commit for BeeReputation
 });
