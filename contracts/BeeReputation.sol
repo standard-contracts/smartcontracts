@@ -12,7 +12,11 @@ contract BeeReputation is Ownable {
         bytes32 userId;
     }
 
-    // 
+    event NewUserReputation(address platform, bytes32 uuid, uint8 newRepScore);
+    event UpdateUserReputation(address platform, bytes32 uuid, uint8 newRepScore);
+
+
+    // whitelist platforms
     mapping(address => PlatformStruct) public whitelistedPlatforms;
     // userId mapped to platform specific rep score
     mapping(bytes32 => mapping(address => uint8)) public reputation;
@@ -37,10 +41,10 @@ contract BeeReputation is Ownable {
         require(_newScore > 0);
         if(reputation[_userId][_platform] > 0) {
             reputation[_userId][_platform] = _newScore;
-            // TODO: add event to record update
+            UpdateUserReputation(_platform, _userId, _newScore);
         } else if(reputation[_userId][_platform] == 0){
             reputation[_userId][_platform] = _newScore;
-            // TODO: add event for new user reputation
+            NewUserReputation(_platform, _userId, _newScore);
         } else return false;
 
         return true;
