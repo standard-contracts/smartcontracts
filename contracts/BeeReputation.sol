@@ -16,6 +16,7 @@ contract BeeReputation is Ownable {
     mapping(address => PlatformStruct) public whitelistedPlatforms;
     // userId mapped to platform specific rep score
     mapping(bytes32 => mapping(address => uint8)) public reputation;
+    mapping(bytes32 => uint8) public averageReputation;
     // platform admins
     mapping(address => address) public platformAdmins;
 
@@ -23,7 +24,7 @@ contract BeeReputation is Ownable {
         //TODO: initilize with bootstrap reputation
     }
 
-    function addPlatform(address _platform, address _admin) {
+    function addPlatformToWhitelist(address _platform, address _admin) public onlyOwner {
         //TODO: add platform and admin addresses
     }
 
@@ -65,9 +66,15 @@ contract BeeReputation is Ownable {
         owner.transfer(this.balance);
     }
 
-    function checkReputation(address platform, bytes32 userId) public pure returns(uint8) {
+    function checkPlatfomReputation(address _platform, bytes32 _userId) public view returns(uint8 repScore) {
         // spit out the reputation score of an individual
-        revert();
+        uint8 userScore = reputation[_userId][_platform];
+        return userScore;
     }
+
+    function checkAvgReputation(bytes32 _userId) public view returns(uint8 repScore) {
+        uint8 avgScore = averageReputation[_userId];
+        return avgScore;
+    } 
 
 }
