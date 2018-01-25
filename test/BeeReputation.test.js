@@ -8,9 +8,12 @@ contract('BeeReputation Dispatch Test', function (accounts) {
     var user1 = accounts[1];
     var user2 = accounts[2];
     var user3 = accounts[3];
+    var sudoPlatform = accounts[4];
+    var tokenOwner = accounts[5];
+    var uuid = "x";
 
     beforeEach(async function () {
-        token = await BeeToken.new(user1, { from: owner });
+        token = await BeeToken.new(user1, { from: tokenOwner });
         reputation = await BeeReputation.new(token.address, { from: owner });
     });
 
@@ -18,8 +21,8 @@ contract('BeeReputation Dispatch Test', function (accounts) {
         await token.enableTransfer();
         let isEnabled = await token.transferEnabled();
         assert(isEnabled, "transfers should be enabled");
-        await token.transfer(user2, 1000, { from: owner });
-        await token.transfer(user3, 1000, { from: owner });
+        await token.transfer(user2, 1000, { from: tokenOwner });
+        await token.transfer(user3, 1000, { from: tokenOwner });
         let user2Balance = (await token.balanceOf(user2)).toNumber();
         let user3Balance = (await token.balanceOf(user3)).toNumber();
         assert.equal(user2Balance, 1000);
@@ -29,9 +32,45 @@ contract('BeeReputation Dispatch Test', function (accounts) {
 
         await reputation.boostReputationWithBees(100, { from: user2 });
         let balanceCheck = (await token.balanceOf(reputation.address)).toNumber();
-        assert.equal(balanceCheck, 100)
+        assert.equal(balanceCheck, 100);
+    });
 
-    })
+    it("Should allow owner to withdraw Bees", async function() {
+        await token.enableTransfer({ from: tokenOwner });
+        let isEnabled = await token.transferEnabled();
+        assert(isEnabled, "transfers should be enabled");
+        await token.transfer(user2, 1000, { from: tokenOwner });
+        await token.transfer(user3, 1000, { from: tokenOwner });
+        let user2Balance = (await token.balanceOf(user2)).toNumber();
+        let user3Balance = (await token.balanceOf(user3)).toNumber();
+        assert.equal(user2Balance, 1000);
+        assert.equal(user3Balance, 1000);
+
+        await token.approve(reputation.address, 100, { from: user2 });
+
+        await reputation.boostReputationWithBees(100, { from: user2 });
+        let balanceCheck = (await token.balanceOf(reputation.address)).toNumber();
+        assert.equal(balanceCheck, 100);
+
+        await reputation.ownerWithdrawBee({ from: owner });
+        let ownerBalance = (await token.balanceOf(owner)).toNumber();
+        assert.equal(ownerBalance, 100);
+    });
+
+    it("Should add new reputation score", async function() {
+        await reputation.updateReputation(sudoPlatform, uuid, 50, { from: owner });
+        var repScore = (await reputation.reputation(uuid, sudoPlatform)).toNumber();
+        assert.equal(repScore, 50);
+    });
+
+    it("Should update reputation score", async function() {
+        await reputation.updateReputation(sudoPlatform, uuid, 50, { from: owner });
+        await reputation.updateReputation(sudoPlatform, uuid, 60, { from: owner });
+        var repScore = (await reputation.reputation(uuid, sudoPlatform)).toNumber();
+        assert.equal(repScore, 60);
+    });
+
+
     //TODO: should allow owner to withdraw ether
     //TODO: should allow owner to withdraw Bee
     //TODO: should allow owner to update new platforms
