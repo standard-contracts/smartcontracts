@@ -81,10 +81,34 @@ contract('BeeReputation Dispatch Test', function (accounts) {
         assert.equal(repScore, 60);
     });
 
+    it("Should read reputation score", async function() {
+        await reputation.updateReputation(sudoPlatform, uuid, 50, { from: owner });
+        var repScore = (await reputation.checkPlatfomReputation(sudoPlatform, uuid)).toNumber();
+        assert.equal(repScore, 50);
+    });
+
+    it("Should read score 0 of non existant platform", async function() {
+        await reputation.updateReputation(sudoPlatform, uuid, 50, { from: owner });
+        var repScore = (await reputation.checkPlatfomReputation(owner, uuid)).toNumber();
+        assert.equal(repScore, 0);
+    });
+
+    it("Should read score 0 of non existant user", async function() {
+        await reputation.updateReputation(sudoPlatform, uuid, 50, { from: owner });
+        var repScore = (await reputation.checkPlatfomReputation(sudoPlatform, "hi")).toNumber();
+        assert.equal(repScore, 0);
+    });
+
+    it("Should read score 0 if both platform and user do not exist", async function() {
+        var repScore = (await reputation.checkPlatfomReputation(sudoPlatform, "hi")).toNumber();
+        assert.equal(repScore, 0);
+    });
+
+
     //TODO: should allow owner to withdraw ether
     //TODO: should allow owner to update new platforms
     //TODO: should allow owner to add new admins
     //TODO: should not allow non-admins/owner update scores
     //TODO: should allow admin to update platform rep scores
-    //TODO should not admins to update other platforms
+    //TODO: should not allow admins to update other platforms
 });
