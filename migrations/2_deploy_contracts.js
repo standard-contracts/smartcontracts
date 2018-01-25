@@ -47,15 +47,8 @@ module.exports = function (deployer, network, accounts) {
             })
         })
     }).then(() => {
-<<<<<<< HEAD
-        const tokenAddress = beeToken.address;
-        const tokenPrice = 10000000000000000000;
-        return deployer.deploy(
-            BeeReputation, tokenPrice, { from: owner }
-=======
         return deployer.deploy(
             BeeReputation, { from: owner }
->>>>>>> Init commit for BeeReputation
         ).then(() => {
             return BeeReputation.deployed().then(instance => {
                 beeReputation = instance;
