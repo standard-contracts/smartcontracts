@@ -4,19 +4,20 @@ import 'zeppelin-solidity/contracts/token/ERC20.sol';
 import 'zeppelin-solidity/contracts/math/SafeMath.sol';
 import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 
-
 contract BeeReputation is Ownable {
 
     address public beeTokenAddress;
     struct PlatformStruct {
         address sharingPlatform;
-        address platformAdmin;
         bytes32 userId;
     }
 
-
+    // 
+    mapping(address => PlatformStruct) public whitelistedPlatforms;
     // userId mapped to platform specific rep score
-    mapping(bytes32 => mapping(uint8 => PlatformStruct)) public reputation;
+    mapping(bytes32 => mapping(address => uint8)) public reputation;
+    // platform admins
+    mapping(address => address) public platformAdmins;
 
     function BeeReputation(address _beeTokenAddress) public {
         //TODO: initilize with bootstrap reputation
@@ -27,10 +28,25 @@ contract BeeReputation is Ownable {
     function () public payable {
     }
 
-    function updateReputation(address platform) public onlyOwner {
+    function addPlatform(address _platform, address _admin) {
+        //TODO: add platform and admin addresses
+    }
+
+    function updateReputation(address _platform, bytes32 _userId, uint8 _newScore) public onlyOwner returns(bool success) {
+        // TODO: check for whitelistedPlatforms and admin
+        require(_newScore > 0);
+        if(reputation[_userId][_platform] > 0) {
+            reputation[_userId][_platform] = _newScore;
+            // TODO: add event to record update
+        } else if(reputation[_userId][_platform] == 0){
+            reputation[_userId][_platform] = _newScore;
+            // TODO: add event for new user reputation
+        } else return false;
+
+        return true;
         // check address of score to be updated
         // update specified score
-        revert();
+
     }
 
     function remove(address platform) public onlyOwner {
