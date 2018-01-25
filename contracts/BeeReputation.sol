@@ -9,9 +9,8 @@ contract BeeReputation is Ownable {
         bytes32 userId;
     }
 
-    event NewUserReputation(address platform, bytes32 uuid, uint8 newRepScore);
-    event UpdateUserReputation(address platform, bytes32 uuid, uint8 newRepScore);
-
+    event BootstrapNewUserReputation(address platform, bytes32 userId, uint8 initialRepScore);
+    event UpdateUserReputation(address platform, bytes32 userId, uint8 newRepScore);
 
     // whitelist platforms
     mapping(address => PlatformStruct) public whitelistedPlatforms;
@@ -36,7 +35,7 @@ contract BeeReputation is Ownable {
             UpdateUserReputation(_platform, _userId, _newScore);
         } else if(reputation[_userId][_platform] == 0){
             reputation[_userId][_platform] = _newScore;
-            NewUserReputation(_platform, _userId, _newScore);
+            BootstrapNewUserReputation(_platform, _userId, _newScore);
         } else return false;
 
         return true;
@@ -48,6 +47,22 @@ contract BeeReputation is Ownable {
     function remove(address platform) public onlyOwner {
         // remove specified platform from reputation system
         revert();
+    }
+
+    // User needs to call approve on token address before calling
+    function boostReputationWithBees(uint256 amount) public {
+        ERC20 tokenContract = ERC20(beeTokenAddress);
+        require(tokenContract.transferFrom(msg.sender, this, amount));
+    }
+
+    function ownerWithdrawBee() external onlyOwner {
+        ERC20 tokenContract = ERC20(beeTokenAddress);
+        uint256 tokenBalance = tokenContract.balanceOf(this);
+        require(tokenContract.transfer(owner, tokenBalance));
+    }
+
+    function ownerWithdrawEther() external onlyOwner {
+        owner.transfer(this.balance);
     }
 
     function checkReputation(address platform, bytes32 userId) public pure returns(uint8) {
