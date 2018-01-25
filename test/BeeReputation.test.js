@@ -2,6 +2,7 @@ var BeeReputation = artifacts.require("./BeeReputation.sol");
 var BeeToken = artifacts.require("./BeeToken.sol");
 var util = require("./util.js");
 
+
 contract('BeeReputation Dispatch Test', function (accounts) {
     // account[0] points to the owner on the testRPC setup
     var owner = accounts[0];
@@ -18,7 +19,7 @@ contract('BeeReputation Dispatch Test', function (accounts) {
     });
 
     it("Should allow users to pay Bee to increase their reputation", async function() {
-        await token.enableTransfer();
+        await token.enableTransfer({ from: tokenOwner });
         let isEnabled = await token.transferEnabled();
         assert(isEnabled, "transfers should be enabled");
         await token.transfer(user2, 1000, { from: tokenOwner });
@@ -70,13 +71,10 @@ contract('BeeReputation Dispatch Test', function (accounts) {
         assert.equal(repScore, 60);
     });
 
-
     //TODO: should allow owner to withdraw ether
-    //TODO: should allow owner to withdraw Bee
     //TODO: should allow owner to update new platforms
     //TODO: should allow owner to add new admins
     //TODO: should not allow non-admins/owner update scores
     //TODO: should allow admin to update platform rep scores
     //TODO should not admins to update other platforms
-    //
 });
