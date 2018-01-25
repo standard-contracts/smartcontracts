@@ -58,6 +58,16 @@ contract('BeeReputation Dispatch Test', function (accounts) {
         assert.equal(ownerBalance, 100);
     });
 
+    it("Should allow owner to withdraw ether donations", async function() {
+        await reputation.sendTransaction({ value: util.oneEther, from: user2 });
+        var repAddress = await reputation.address;
+        var ethBalance = (await web3.eth.getBalance(repAddress)).toNumber();
+        await reputation.ownerWithdrawEther();
+        assert.equal(ethBalance, 1000000000000000000);
+        var ethBalance = (await web3.eth.getBalance(repAddress)).toNumber();
+        assert.equal(ethBalance, 0);
+    });
+
     it("Should add new reputation score", async function() {
         await reputation.updateReputation(sudoPlatform, uuid, 50, { from: owner });
         var repScore = (await reputation.reputation(uuid, sudoPlatform)).toNumber();
