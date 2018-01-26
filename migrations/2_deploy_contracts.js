@@ -47,8 +47,10 @@ module.exports = function (deployer, network, accounts) {
             })
         })
     }).then(() => {
+        const tokenAddress = beeToken.address;
+        const tokenPrice = 10000000000000000000;
         return deployer.deploy(
-            BeeReputation, { from: owner }
+            BeeReputation, tokenPrice, { from: owner }
         ).then(() => {
             return BeeReputation.deployed().then(instance => {
                 beeReputation = instance;
