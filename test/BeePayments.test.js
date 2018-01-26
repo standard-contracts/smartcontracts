@@ -23,7 +23,7 @@ contract('BeePayments Dispatch Test', function (accounts) {
         var cost = 50;
         var deposit = 20;
         var fee = 10;
-        await payments.initPayment(paymentId, token.address, demand, supply, cost, deposit, fee, fee, 300, 1800, { from: owner });
+        await payments.initPayment(paymentId, token.address, demand, supply, cost, deposit, fee, fee, (time + 10), 300, 1800, { from: owner });
     }
 
     async function sendTransaction(value, user) {
@@ -43,14 +43,16 @@ contract('BeePayments Dispatch Test', function (accounts) {
     });
 
     it("should initialize payment", async function () {
-        await initPayment(uuid);
+        var n = await web3.eth.getBlock(web3.eth.blockNumber).timestamp;
+        await initPayment(uuid, n);
         var payStruct = await payments.allPayments(uuid);
         var exist = payStruct[0];
         assert.equal(exist, true);
     });
 
     it("should not initialize existing payment", async function () {
-        await initPayment(uuid);
+        var n = await web3.eth.getBlock(web3.eth.blockNumber).timestamp;
+        await initPayment(uuid, n);
         var payStruct = await payments.allPayments(uuid);
         var exist = payStruct[0];
         assert.equal(exist, true);
@@ -92,7 +94,8 @@ contract('BeePayments Dispatch Test', function (accounts) {
         assert.equal(demandBalance, 1000);
         assert.equal(supplyBalance, 1000);
 
-        await initPayment(uuid);
+        var n = await web3.eth.getBlock(web3.eth.blockNumber).timestamp;
+        await initPayment(uuid, n);
         var payStruct = await payments.allPayments(uuid);
         var exist = payStruct[0];
         assert.equal(exist, true);
@@ -128,7 +131,8 @@ contract('BeePayments Dispatch Test', function (accounts) {
         assert.equal(demandBalance, 1000);
         assert.equal(supplyBalance, 1000);
 
-        await initPayment(uuid);
+        var n = await web3.eth.getBlock(web3.eth.blockNumber).timestamp;
+        await initPayment(uuid, n);
         var payStruct = await payments.allPayments(uuid);
         var exist = payStruct[0];
         assert.equal(exist, true);
@@ -162,7 +166,8 @@ contract('BeePayments Dispatch Test', function (accounts) {
         assert.equal(demandBalance, 1000);
         assert.equal(supplyBalance, 1000);
 
-        await initPayment(uuid);
+        var n = await web3.eth.getBlock(web3.eth.blockNumber).timestamp;
+        await initPayment(uuid, n);
         var payStruct = await payments.allPayments(uuid);
         var exist = payStruct[0];
         assert.equal(exist, true);
@@ -271,7 +276,7 @@ contract('BeePayments Cancel Test', function (accounts) {
         var cost = 50;
         var deposit = 20;
         var fee = 10;
-        await payments.initPayment(paymentId, token.address, demand, supply, cost, deposit, fee, fee, (time + 10), (time + 50), { from: owner });
+        await payments.initPayment(paymentId, token.address, demand, supply, cost, deposit, fee, fee, (time+10), (time + 10), (time + 50), { from: owner });
 
     }
     async function sendTransaction(value, user) {
@@ -416,12 +421,13 @@ contract('BeePayments Arbitration Host Test', function (accounts) {
         token = await BeeToken.new(user1, { from: owner});
     });
 
-    async function initPayment(paymentId) {
+    async function initPayment(paymentId, time) {
         var cost = 50;
         var deposit = 20;
         var fee = 10;
-        await payments.initPayment(paymentId, token.address, demand, supply, cost, deposit, fee, fee, 300, 1800, { from: owner });
+        await payments.initPayment(paymentId, token.address, demand, supply, cost, deposit, fee, fee, (time+10), 300, 1800, { from: owner });
     }
+
     async function sendTransaction(value, user) {
         await payments.sendTransaction({ value: util.toEther(value), from: user });
     }
@@ -437,7 +443,8 @@ contract('BeePayments Arbitration Host Test', function (accounts) {
         assert.equal(demandBalance, 1000);
         assert.equal(supplyBalance, 1000);
 
-        await initPayment(uuid);
+        var n = await web3.eth.getBlock(web3.eth.blockNumber).timestamp;
+        await initPayment(uuid, n);
         var payStruct = await payments.allPayments(uuid);
         var exist = payStruct[0];
         assert.equal(exist, true);
@@ -474,7 +481,8 @@ contract('BeePayments Arbitration Host Test', function (accounts) {
         assert.equal(demandBalance, 1000);
         assert.equal(supplyBalance, 1000);
 
-        await initPayment(uuid);
+        var n = await web3.eth.getBlock(web3.eth.blockNumber).timestamp;
+        await initPayment(uuid, n);
         var payStruct = await payments.allPayments(uuid);
         var exist = payStruct[0];
         assert.equal(exist, true);
@@ -505,5 +513,60 @@ contract('BeePayments Arbitration Host Test', function (accounts) {
         var payStruct = await payments.allPayments(uuid);
         var status = payStruct[1].toString(10);
         assert.equal(status, "3");
+    });
+});
+
+contract('BeePayments Arbitration Host Test', function (accounts) {
+    const owner = accounts[0];
+    const user1 = accounts[1];
+    const demand = accounts[2];
+    const supply = accounts[3];
+    const arbiterAddress = accounts[4];
+    const uuid = "x";
+    const aFee = 10;
+
+    let token = null;
+    let payments = null;
+
+    beforeEach(async function () {
+        payments = await BeePayments.new(arbiterAddress, aFee, { from: owner});
+        token = await BeeToken.new(user1, { from: owner});
+    });
+
+    async function initPayment(paymentId, time) {
+        var cost = 50;
+        var deposit = 20;
+        var fee = 10;
+        await payments.initPayment(paymentId, token.address, demand, supply, cost, deposit, fee, fee, 10, 300, 1800, { from: owner });
+    }
+
+    async function sendTransaction(value, user) {
+        await payments.sendTransaction({ value: util.toEther(value), from: user });
+    }
+
+    it("should reject payments after deadline", async function () {
+        await token.enableTransfer();
+        let isEnabled = await token.transferEnabled();
+        assert(isEnabled, "transfers should be enabled");
+        await token.transfer(demand, 1000, { from: owner });
+        await token.transfer(supply, 1000, { from: owner });
+        let demandBalance = (await token.balanceOf(demand)).toNumber();
+        let supplyBalance = (await token.balanceOf(supply)).toNumber();
+        assert.equal(demandBalance, 1000);
+        assert.equal(supplyBalance, 1000);
+
+        var n = await web3.eth.getBlock(web3.eth.blockNumber).timestamp;
+        await initPayment(uuid, n);
+        var payStruct = await payments.allPayments(uuid);
+        var exist = payStruct[0];
+        assert.equal(exist, true);
+
+        var payStruct = await payments.allPayments(uuid);
+        var n = await web3.eth.getBlock(web3.eth.blockNumber).timestamp;
+        await token.approve(payments.address, 800, { from: demand });
+        await token.approve(payments.address, 800, { from: supply });
+        await util.assertRevert(payments.pay(uuid, { from: demand }));
+        await util.assertRevert(payments.pay(uuid, { from: supply }));
+
     });
 });

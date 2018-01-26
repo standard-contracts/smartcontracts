@@ -57,9 +57,16 @@ contract BeePayments is Ownable {
         require(allPayments[paymentId].paymentStatus == paymentStatus);
         _;
     }
+
+    modifier beforePaymentDeadline(bytes32 paymentId) {
+        require(now <= paymentDeadlines[paymentId]);
+        _;
+    }
     
     // maps the paymentIds to the struct
     mapping (bytes32 => PaymentStruct) public allPayments;
+    // maps paymentIds to payment deadline time in seconds
+    mapping (bytes32 => uint64) public paymentDeadlines;
 
     function BeePayments(address arbitrationAddress_, uint256 arbitrationFee_) public {
         arbitrationAddress = arbitrationAddress_;
@@ -93,6 +100,7 @@ contract BeePayments is Ownable {
         uint256 securityDeposit,
         uint256 demandCancellationFee,
         uint supplyCancellationFee,
+        uint64 payDeadlineInS,
         uint64 cancelDeadlineInS,
         uint64 paymentDispatchTimeInS
     ) public onlyOwner returns(bool success)
@@ -118,6 +126,8 @@ contract BeePayments is Ownable {
             false,
             false
         );
+        paymentDeadlines[paymentId] = payDeadlineInS;
+
         return true;
     }
     
@@ -130,6 +140,7 @@ contract BeePayments is Ownable {
     ) public
     onlyPaymentStatus(paymentId, PaymentStatus.INITIALIZED)
     demandOrSupplyEntity(paymentId)
+    beforePaymentDeadline(paymentId)
     returns (bool success)
     {
         PaymentStruct storage payment = allPayments[paymentId];
