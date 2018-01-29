@@ -12,6 +12,8 @@ contract BeePayments is Ownable {
     address public arbitrationAddress;
     uint256 public arbitrationFee;
 
+    // add pool
+
     enum PaymentStatus {
         NOT_FOUND,      // payment does not exist
         INITIALIZED,    // awaiting payment from supply & demand entities
@@ -186,7 +188,6 @@ contract BeePayments is Ownable {
     /**
      * Dispatches in progress payments daily based on paymentDispatchTimeInS.
      * Get the list of inProgress payments mapping through backend. 
-     * @params 
      */
     function dispatchPayments(bytes32[] paymentId) external {
         // check gas costs - limit iterating through every IN_PROGRESS payment
