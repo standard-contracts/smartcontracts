@@ -40,9 +40,9 @@ contract BeePayments is Ownable {
     }
     
     // TODO: define events
-    //event Pay(address user, bool paid, uint amount);
-    //event CancelPayment(uint time, uint amount);
-    //event DisputePayment(uint time, uint amount);
+    event Pay(address user, bool paid, uint256 amount);
+    event CancelPayment(address user, bytes32 paymentId, uint64 time);
+    event DisputePayment(address user, bytes32 paymentId, uint64 time, uint256 amountt);
 
     // TODO: define modifiers
     modifier demandOrSupplyEntity(bytes32 paymentId) {
@@ -99,7 +99,7 @@ contract BeePayments is Ownable {
         uint256 cost,
         uint256 securityDeposit,
         uint256 demandCancellationFee,
-        uint supplyCancellationFee,
+        uint256 supplyCancellationFee,
         uint64 payDeadlineInS,
         uint64 cancelDeadlineInS,
         uint64 paymentDispatchTimeInS
@@ -155,10 +155,12 @@ contract BeePayments is Ownable {
             );
             if (tokenContract.transferFrom(msg.sender, this, amountToPay)) {
                 payment.demandPaid = true;
+                Pay(msg.sender, true, amountToPay);
             }
         } else {
             if (tokenContract.transferFrom(msg.sender, this, payment.supplyCancellationFee)) {
                 payment.supplyPaid = true;
+                Pay(msg.sender, true, payment.supplyCancellationFee);
             }
         }
 
@@ -183,14 +185,11 @@ contract BeePayments is Ownable {
     }
     /**
      * Dispatches in progress payments daily based on paymentDispatchTimeInS.
-     * This will only be the happy path
+     * Get the list of inProgress payments mapping through backend. 
+     * @params 
      */
-    // Make a function to get the list of inProgress payments mapping. 
     function dispatchPayments(bytes32[] paymentId) external {
-        // TODO: check daily in progress payments, and pay appropirate accounts.
-        // TODO: move successful payments from in progress to completed
         // check gas costs - limit iterating through every IN_PROGRESS payment
-        
         for (uint32 i = 0; i < paymentId.length; i++) {
             dispatchPayment(paymentId[i]);
         }
@@ -230,6 +229,7 @@ contract BeePayments is Ownable {
                 if (tokenContract.transfer(msg.sender, amountReturnedDemand)
                     && tokenContract.transfer(payment.supplyEntityAddress, amountReturnedSupply)) {
                     payment.paymentStatus = PaymentStatus.CANCELED;
+                    CancelPayment(msg.sender, paymentId, now);
                 }
             } else {
                 // Return demand entity's money in addition to supply cancellation fee
@@ -244,6 +244,8 @@ contract BeePayments is Ownable {
                 );
                 if (tokenContract.transfer(payment.demandEntityAddress, amountReturnedDemand)) {
                     payment.paymentStatus = PaymentStatus.CANCELED;
+                    CancelPayment(msg.sender, paymentId, now);
+
                 }
             }
         }
@@ -260,8 +262,6 @@ contract BeePayments is Ownable {
     onlyPaymentStatus(paymentId, PaymentStatus.IN_PROGRESS)
     returns(bool success)
     {
-        // TODO: pass escrow to Bee Arbitration protocol
-        // TODO: move from in progress to arbitration
         PaymentStruct storage payment = allPayments[paymentId];
         ERC20 tokenContract = ERC20(payment.paymentTokenContractAddress);
         uint256 total = SafeMath.add(
@@ -278,6 +278,7 @@ contract BeePayments is Ownable {
         require(tokenContract.transferFrom(msg.sender, arbitrationAddress, arbitrationFee)
         && tokenContract.transfer(arbitrationAddress, total));
         payment.paymentStatus = PaymentStatus.IN_ARBITRATION;
+        DisputePayment(user, paymentId, now, total);
 
         return true;
     }
