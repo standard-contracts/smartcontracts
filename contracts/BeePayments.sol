@@ -12,6 +12,8 @@ contract BeePayments is Ownable {
     address public arbitrationAddress;
     uint256 public arbitrationFee;
 
+    // add fee pool enum, or add mappings
+
     enum PaymentStatus {
         NOT_FOUND,      // payment does not exist
         INITIALIZED,    // awaiting payment from supply & demand entities
@@ -38,13 +40,11 @@ contract BeePayments is Ownable {
         bool demandPaid;
         bool supplyPaid;
     }
-    
-    // TODO: define events
-    event Pay(address user, bool paid, uint256 amount);
-    event CancelPayment(address user, bytes32 paymentId, uint64 time);
-    event DisputePayment(address user, bytes32 paymentId, uint64 time, uint256 amountt);
 
-    // TODO: define modifiers
+    event Pay(address user, bool paid, uint256 amount);
+    event CancelPayment(address user, bytes32 paymentId, uint256 time);
+    event DisputePayment(address user, bytes32 paymentId, uint256 time, uint256 amount);
+
     modifier demandOrSupplyEntity(bytes32 paymentId) {
         require(
             msg.sender == allPayments[paymentId].demandEntityAddress ||
@@ -62,7 +62,7 @@ contract BeePayments is Ownable {
         require(now <= paymentDeadlines[paymentId]);
         _;
     }
-    
+
     // maps the paymentIds to the struct
     mapping (bytes32 => PaymentStruct) public allPayments;
     // maps paymentIds to payment deadline time in seconds
@@ -76,7 +76,7 @@ contract BeePayments is Ownable {
     function () public payable {
         revert();
     }
-    
+
     function updateArbitrationAddress(address arbitrationAddress_) public onlyOwner {
         arbitrationAddress = arbitrationAddress_;
     }
@@ -84,7 +84,7 @@ contract BeePayments is Ownable {
     function updateArbitrationFee(uint256 arbitrationFee_) public onlyOwner {
         arbitrationFee = arbitrationFee_;
     }
-    
+
     /**
      * Initializes a new payment, and awaits for supply & demand entities to
      * pay.
@@ -107,7 +107,6 @@ contract BeePayments is Ownable {
     {
         if (allPayments[paymentId].exist) {
             revert();
-            // return false;
         }
 
         allPayments[paymentId] = PaymentStruct(
@@ -130,46 +129,43 @@ contract BeePayments is Ownable {
 
         return true;
     }
-    
+
     /**
-     * To be invoked by entities to pay.
+     * To be invoked after both parties approve transaction.
      */
     // must call approve on token contract to allow pay to transfer on their behalf
     function pay(
         bytes32 paymentId
     ) public
     onlyPaymentStatus(paymentId, PaymentStatus.INITIALIZED)
-    demandOrSupplyEntity(paymentId)
     beforePaymentDeadline(paymentId)
     returns (bool success)
     {
         PaymentStruct storage payment = allPayments[paymentId];
         ERC20 tokenContract = ERC20(payment.paymentTokenContractAddress);
-        if (msg.sender == payment.demandEntityAddress) {
-            uint256 amountToPay = SafeMath.add(
-                payment.securityDeposit,
-                SafeMath.add(
-                    payment.demandCancellationFee,
-                    payment.cost
-                )
-            );
-            if (tokenContract.transferFrom(msg.sender, this, amountToPay)) {
-                payment.demandPaid = true;
-                Pay(msg.sender, true, amountToPay);
-            }
-        } else {
-            if (tokenContract.transferFrom(msg.sender, this, payment.supplyCancellationFee)) {
-                payment.supplyPaid = true;
-                Pay(msg.sender, true, payment.supplyCancellationFee);
-            }
+        uint256 amountToPay = SafeMath.add(
+            payment.securityDeposit,
+            SafeMath.add(
+                payment.demandCancellationFee,
+                payment.cost
+            )
+        );
+
+        if (tokenContract.transferFrom(payment.demandEntityAddress, this, amountToPay) &&
+        tokenContract.transferFrom(payment.supplyEntityAddress, this, payment.supplyCancellationFee)) {
+            Pay(msg.sender, true, payment.supplyCancellationFee);
+            Pay(msg.sender, true, amountToPay);
         }
+
+        payment.supplyPaid = true;
+        payment.demandPaid = true;
 
         if (payment.demandPaid && payment.supplyPaid) {
             payment.paymentStatus = PaymentStatus.IN_PROGRESS;
         }
         return true;
     }
-    
+
     function dispatchPayment(bytes32 paymentId) public onlyPaymentStatus(paymentId, PaymentStatus.IN_PROGRESS) {
         PaymentStruct storage payment = allPayments[paymentId];
         ERC20 tokenContract = ERC20(payment.paymentTokenContractAddress);
@@ -278,7 +274,7 @@ contract BeePayments is Ownable {
         require(tokenContract.transferFrom(msg.sender, arbitrationAddress, arbitrationFee)
         && tokenContract.transfer(arbitrationAddress, total));
         payment.paymentStatus = PaymentStatus.IN_ARBITRATION;
-        DisputePayment(user, paymentId, now, total);
+        DisputePayment(msg.sender, paymentId, now, total);
 
         return true;
     }
