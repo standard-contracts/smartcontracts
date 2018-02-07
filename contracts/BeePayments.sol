@@ -12,7 +12,11 @@ contract BeePayments is Ownable {
     address public arbitrationAddress;
     uint256 public arbitrationFee;
 
+<<<<<<< HEAD
     // add fee pool enum, or add mappings
+=======
+    // add pool
+>>>>>>> b3a199f42e05d70be91a598f24ff6e34d90d3c59
 
     enum PaymentStatus {
         NOT_FOUND,      // payment does not exist
@@ -40,6 +44,14 @@ contract BeePayments is Ownable {
         bool demandPaid;
         bool supplyPaid;
     }
+<<<<<<< HEAD
+=======
+    
+    // TODO: define events
+    event Pay(address user, bool paid, uint256 amount);
+    event CancelPayment(address user, bytes32 paymentId, uint64 time);
+    event DisputePayment(address user, bytes32 paymentId, uint64 time, uint256 amountt);
+>>>>>>> b3a199f42e05d70be91a598f24ff6e34d90d3c59
 
     event Pay(address user, bool paid, uint256 amount);
     event CancelPayment(address user, bytes32 paymentId, uint256 time);
@@ -62,7 +74,11 @@ contract BeePayments is Ownable {
         require(now <= paymentDeadlines[paymentId]);
         _;
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> b3a199f42e05d70be91a598f24ff6e34d90d3c59
     // maps the paymentIds to the struct
     mapping (bytes32 => PaymentStruct) public allPayments;
     // maps paymentIds to payment deadline time in seconds
@@ -138,23 +154,29 @@ contract BeePayments is Ownable {
         bytes32 paymentId
     ) public
     onlyPaymentStatus(paymentId, PaymentStatus.INITIALIZED)
+    demandOrSupplyEntity(paymentId)
     beforePaymentDeadline(paymentId)
     returns (bool success)
     {
         PaymentStruct storage payment = allPayments[paymentId];
         ERC20 tokenContract = ERC20(payment.paymentTokenContractAddress);
-        uint256 amountToPay = SafeMath.add(
-            payment.securityDeposit,
-            SafeMath.add(
-                payment.demandCancellationFee,
-                payment.cost
-            )
-        );
-
-        if (tokenContract.transferFrom(payment.demandEntityAddress, this, amountToPay) &&
-        tokenContract.transferFrom(payment.supplyEntityAddress, this, payment.supplyCancellationFee)) {
-            Pay(msg.sender, true, payment.supplyCancellationFee);
-            Pay(msg.sender, true, amountToPay);
+        if (msg.sender == payment.demandEntityAddress) {
+            uint256 amountToPay = SafeMath.add(
+                payment.securityDeposit,
+                SafeMath.add(
+                    payment.demandCancellationFee,
+                    payment.cost
+                )
+            );
+            if (tokenContract.transferFrom(msg.sender, this, amountToPay)) {
+                payment.demandPaid = true;
+                Pay(msg.sender, true, amountToPay);
+            }
+        } else {
+            if (tokenContract.transferFrom(msg.sender, this, payment.supplyCancellationFee)) {
+                payment.supplyPaid = true;
+                Pay(msg.sender, true, payment.supplyCancellationFee);
+            }
         }
 
         payment.supplyPaid = true;
@@ -182,7 +204,6 @@ contract BeePayments is Ownable {
     /**
      * Dispatches in progress payments daily based on paymentDispatchTimeInS.
      * Get the list of inProgress payments mapping through backend. 
-     * @params 
      */
     function dispatchPayments(bytes32[] paymentId) external {
         // check gas costs - limit iterating through every IN_PROGRESS payment
@@ -274,7 +295,11 @@ contract BeePayments is Ownable {
         require(tokenContract.transferFrom(msg.sender, arbitrationAddress, arbitrationFee)
         && tokenContract.transfer(arbitrationAddress, total));
         payment.paymentStatus = PaymentStatus.IN_ARBITRATION;
+<<<<<<< HEAD
         DisputePayment(msg.sender, paymentId, now, total);
+=======
+        DisputePayment(user, paymentId, now, total);
+>>>>>>> b3a199f42e05d70be91a598f24ff6e34d90d3c59
 
         return true;
     }
