@@ -137,29 +137,23 @@ contract BeePayments is Ownable {
         bytes32 paymentId
     ) public
     onlyPaymentStatus(paymentId, PaymentStatus.INITIALIZED)
-    demandOrSupplyEntity(paymentId)
     beforePaymentDeadline(paymentId)
     returns (bool success)
     {
         PaymentStruct storage payment = allPayments[paymentId];
         ERC20 tokenContract = ERC20(payment.paymentTokenContractAddress);
-        if (msg.sender == payment.demandEntityAddress) {
-            uint256 amountToPay = SafeMath.add(
-                payment.securityDeposit,
-                SafeMath.add(
-                    payment.demandCancellationFee,
-                    payment.cost
-                )
-            );
-            if (tokenContract.transferFrom(msg.sender, this, amountToPay)) {
-                payment.demandPaid = true;
-                Pay(msg.sender, true, amountToPay);
-            }
-        } else {
-            if (tokenContract.transferFrom(msg.sender, this, payment.supplyCancellationFee)) {
-                payment.supplyPaid = true;
-                Pay(msg.sender, true, payment.supplyCancellationFee);
-            }
+        uint256 amountToPay = SafeMath.add(
+            payment.securityDeposit,
+            SafeMath.add(
+                payment.demandCancellationFee,
+                payment.cost
+            )
+        );
+
+        if (tokenContract.transferFrom(payment.demandEntityAddress, this, amountToPay) &&
+        tokenContract.transferFrom(payment.supplyEntityAddress, this, payment.supplyCancellationFee)) {
+            Pay(msg.sender, true, payment.supplyCancellationFee);
+            Pay(msg.sender, true, amountToPay);
         }
 
         payment.supplyPaid = true;

@@ -79,10 +79,6 @@ contract('BeePayments Dispatch Test', function (accounts) {
         await util.assertRevert(payments.updateArbitrationFee(10, { from: supply}))
     });
 
-    it("should not let outside parties pay", async function () {
-        await util.assertRevert(payments.pay(uuid, { from: user1 }));
-    });
-
     it("should allow demand and supply entities pay", async function () {
         await token.enableTransfer();
         let isEnabled = await token.transferEnabled();
@@ -105,7 +101,6 @@ contract('BeePayments Dispatch Test', function (accounts) {
         await token.approve(payments.address, 800, { from: demand });
         await token.approve(payments.address, 800, { from: supply });
         await payments.pay(uuid, { from: demand });
-        await payments.pay(uuid, { from: supply });
         var payStruct = await payments.allPayments(uuid);
         var status = payStruct[1].toString(10);
         assert.equal(status, "2");
@@ -142,7 +137,6 @@ contract('BeePayments Dispatch Test', function (accounts) {
         await token.approve(payments.address, 800, { from: demand });
         await token.approve(payments.address, 800, { from: supply });
         await payments.pay(uuid, { from: demand });
-        await payments.pay(uuid, { from: supply });
         var payStruct = await payments.allPayments(uuid);
         var status = payStruct[1].toString(10);
         assert.equal(status, "2");
@@ -177,7 +171,6 @@ contract('BeePayments Dispatch Test', function (accounts) {
         await token.approve(payments.address, 800, { from: demand });
         await token.approve(payments.address, 800, { from: supply });
         await payments.pay(uuid, { from: demand });
-        await payments.pay(uuid, { from: supply });
         var payStruct = await payments.allPayments(uuid);
         var status = payStruct[1].toString(10);
         assert.equal(status, "2");
@@ -211,7 +204,6 @@ contract('BeePayments Dispatch Test', function (accounts) {
         await token.approve(payments.address, 800, { from: demand });
         await token.approve(payments.address, 800, { from: supply });
         await payments.pay(uuid, { from: demand });
-        await payments.pay(uuid, { from: supply });
         var payStruct = await payments.allPayments(uuid);
         var status = payStruct[1].toString(10);
         assert.equal(status, "2");
@@ -243,7 +235,6 @@ contract('BeePayments Dispatch Test', function (accounts) {
         await token.approve(payments.address, 800, { from: demand });
         await token.approve(payments.address, 800, { from: supply });
         await payments.pay(uuid, { from: demand });
-        await payments.pay(uuid, { from: supply });
         var payStruct = await payments.allPayments(uuid);
         var status = payStruct[1].toString(10);
         assert.equal(status, "2");
@@ -304,7 +295,6 @@ contract('BeePayments Cancel Test', function (accounts) {
         await token.approve(payments.address, 800, { from: demand });
         await token.approve(payments.address, 800, { from: supply });
         await payments.pay(uuid, { from: demand });
-        await payments.pay(uuid, { from: supply });
         var payStruct = await payments.allPayments(uuid);
         var status = payStruct[1].toString(10);
         assert.equal(status, "2");
@@ -332,7 +322,6 @@ contract('BeePayments Cancel Test', function (accounts) {
         await token.approve(payments.address, 800, { from: demand });
         await token.approve(payments.address, 800, { from: supply });
         await payments.pay(uuid, { from: demand });
-        await payments.pay(uuid, { from: supply });
         var payStruct = await payments.allPayments(uuid);
         var status = payStruct[1].toString(10);
         assert.equal(status, "2");
@@ -360,7 +349,6 @@ contract('BeePayments Cancel Test', function (accounts) {
         await token.approve(payments.address, 800, { from: demand });
         await token.approve(payments.address, 800, { from: supply });
         await payments.pay(uuid, { from: demand });
-        await payments.pay(uuid, { from: supply });
         var payStruct = await payments.allPayments(uuid);
         var status = payStruct[1].toString(10);
         assert.equal(status, "2");
@@ -392,7 +380,6 @@ contract('BeePayments Cancel Test', function (accounts) {
         await token.approve(payments.address, 800, { from: demand });
         await token.approve(payments.address, 800, { from: supply });
         await payments.pay(uuid, { from: demand });
-        await payments.pay(uuid, { from: supply });
         var payStruct = await payments.allPayments(uuid);
         var status = payStruct[1].toString(10);
         assert.equal(status, "2");
@@ -454,7 +441,6 @@ contract('BeePayments Arbitration Host Test', function (accounts) {
         await token.approve(payments.address, 800, { from: demand });
         await token.approve(payments.address, 800, { from: supply });
         await payments.pay(uuid, { from: demand });
-        await payments.pay(uuid, { from: supply });
         var payStruct = await payments.allPayments(uuid);
         var status = payStruct[1].toString(10);
         assert.equal(status, "2");
@@ -492,7 +478,6 @@ contract('BeePayments Arbitration Host Test', function (accounts) {
         await token.approve(payments.address, 500, { from: demand });
         await token.approve(payments.address, 500, { from: supply });
         await payments.pay(uuid, { from: demand });
-        await payments.pay(uuid, { from: supply });
         var payStruct = await payments.allPayments(uuid);
         var status = payStruct[1].toString(10);
         assert.equal(status, "2");
@@ -566,7 +551,6 @@ contract('BeePayments Arbitration Host Test', function (accounts) {
         await token.approve(payments.address, 800, { from: demand });
         await token.approve(payments.address, 800, { from: supply });
         await util.assertRevert(payments.pay(uuid, { from: demand }));
-        await util.assertRevert(payments.pay(uuid, { from: supply }));
 
     });
 });
