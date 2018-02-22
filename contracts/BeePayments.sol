@@ -107,6 +107,7 @@ contract BeePayments is Ownable {
         if (allPayments[paymentId].exist) {
             revert();
         }
+        require(cost > demandCancellationFee);
 
         allPayments[paymentId] = PaymentStruct(
             true,
@@ -144,10 +145,7 @@ contract BeePayments is Ownable {
         ERC20 tokenContract = ERC20(payment.paymentTokenContractAddress);
         uint256 amountToPay = SafeMath.add(
             payment.securityDeposit,
-            SafeMath.add(
-                payment.demandCancellationFee,
-                payment.cost
-            )
+            payment.cost
         );
 
         if (tokenContract.transferFrom(payment.demandEntityAddress, this, amountToPay) &&
@@ -171,7 +169,7 @@ contract BeePayments is Ownable {
         require(payment.paymentDispatchTimeInS <= now);
         
         uint256 supplyPayout = SafeMath.add(payment.supplyCancellationFee, payment.cost);
-        uint256 demandPayout = SafeMath.add(payment.demandCancellationFee, payment.securityDeposit);
+        uint256 demandPayout = payment.securityDeposit;
         
         if (tokenContract.transfer(payment.supplyEntityAddress, supplyPayout)
             && tokenContract.transfer(payment.demandEntityAddress, demandPayout)) {
@@ -193,58 +191,54 @@ contract BeePayments is Ownable {
      * Cancels that payment in progress. Runs canclation rules as appropriate.
      * @return true if cancel is successful, false otherwise
      */
-    function cancelPayment(bytes32 paymentId) public demandOrSupplyEntity(paymentId) returns(bool success) {
+    function cancelPayment(bytes32 paymentId) public demandOrSupplyEntity(paymentId) onlyPaymentStatus(paymentId, PaymentStatus.IN_PROGRESS) returns(bool success) {
         PaymentStruct storage payment = allPayments[paymentId];
         ERC20 tokenContract = ERC20(payment.paymentTokenContractAddress);
-        // replace now with oracle time
-        if (payment.cancelDeadlineInS < now) {
-            uint256 amountReturnedDemand = SafeMath.add(
-                payment.securityDeposit,
-                SafeMath.add(
-                    payment.demandCancellationFee,
-                    payment.cost
-                )
-            );
-            if (tokenContract.transfer(payment.demandEntityAddress, amountReturnedDemand)
-                && tokenContract.transfer(payment.supplyEntityAddress, payment.supplyCancellationFee)) {
-                payment.paymentStatus = PaymentStatus.CANCELED;
-            }
-        } else {
-            if (msg.sender == payment.demandEntityAddress) {
-            // transfer demandCancellationFee to supply entity
-                amountReturnedDemand = SafeMath.add(
-                    payment.securityDeposit,
-                    payment.cost
-                );
+        if (msg.sender == payment.demandEntityAddress) {
+            // If demand entity cancels after deadline, only return security deposit
+            if (payment.cancelDeadlineInS < now) {
                 uint256 amountReturnedSupply = SafeMath.add(
-                    payment.supplyCancellationFee,
-                    payment.demandCancellationFee
+                    payment.cost,
+                    payment.supplyCancellationFee
                 );
-                if (tokenContract.transfer(msg.sender, amountReturnedDemand)
+                if (tokenContract.transfer(payment.demandEntityAddress, payment.securityDeposit)
                     && tokenContract.transfer(payment.supplyEntityAddress, amountReturnedSupply)) {
-                    payment.paymentStatus = PaymentStatus.CANCELED;
-                    CancelPayment(msg.sender, paymentId, now);
+                        payment.paymentStatus = PaymentStatus.CANCELED;
+                        CancelPayment(msg.sender, paymentId, now);
+
+                    }
+                } else {
+                    amountReturnedSupply = SafeMath.add(
+                        payment.supplyCancellationFee,
+                        payment.demandCancellationFee
+                    );
+                    uint256 costSubCancellationFee = SafeMath.sub(payment.cost, payment.demandCancellationFee);
+                    uint256 amountReturnedDemand = SafeMath.add(
+                        payment.securityDeposit,
+                        costSubCancellationFee
+                    );
+                    if (tokenContract.transfer(payment.demandEntityAddress, amountReturnedDemand)
+                        && tokenContract.transfer(payment.supplyEntityAddress, amountReturnedSupply)) {
+                        payment.paymentStatus = PaymentStatus.CANCELED;
+                        CancelPayment(msg.sender, paymentId, now);
+
+                    }
                 }
             } else {
-                // Return demand entity's money in addition to supply cancellation fee
-                amountReturnedDemand = SafeMath.add(
-                    payment.securityDeposit,
+                amountReturnedDemand = SafeMath.add(payment.cost,
                     SafeMath.add(
-                        payment.cost,
-                        SafeMath.add(
-                            payment.supplyCancellationFee,
-                            payment.demandCancellationFee)
+                        payment.securityDeposit,
+                        payment.supplyCancellationFee
                     )
                 );
                 if (tokenContract.transfer(payment.demandEntityAddress, amountReturnedDemand)) {
                     payment.paymentStatus = PaymentStatus.CANCELED;
                     CancelPayment(msg.sender, paymentId, now);
-
                 }
-            }
+            return true;
         }
-        return true;
     }
+
     /**
      * Moves the in progress payment into arbitration.
      * Needs web3 approve call
@@ -261,11 +255,8 @@ contract BeePayments is Ownable {
         uint256 total = SafeMath.add(
             payment.securityDeposit,
             SafeMath.add(
-                payment.demandCancellationFee,
-                SafeMath.add(
-                    payment.cost,
-                    payment.supplyCancellationFee
-                )
+                payment.cost,
+                payment.supplyCancellationFee
             )
         );
 

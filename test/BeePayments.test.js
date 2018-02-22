@@ -183,7 +183,7 @@ contract('BeePayments Dispatch Test', function (accounts) {
         assert.equal(s, 1050);
     });
 
-    it("should allow cancellation from demand without fee", async function () {
+    it("should allow cancellation from demand with fee", async function () {
         await token.enableTransfer();
         let isEnabled = await token.transferEnabled();
         assert(isEnabled, "transfers should be enabled");
@@ -210,11 +210,11 @@ contract('BeePayments Dispatch Test', function (accounts) {
         await payments.cancelPayment(uuid, { from: demand });
         let d = (await token.balanceOf(demand)).toNumber();
         let s = (await token.balanceOf(supply)).toNumber();
-        assert.equal(d, 1000);
-        assert.equal(s, 1000);
+        assert.equal(d, 950);
+        assert.equal(s, 1050);
     });
     
-    it("should allow cancellation from supply without fee", async function () {
+    it("should allow cancellation from supply with fee", async function () {
         await token.enableTransfer();
         let isEnabled = await token.transferEnabled();
         assert(isEnabled, "transfers should be enabled");
@@ -241,8 +241,8 @@ contract('BeePayments Dispatch Test', function (accounts) {
         await payments.cancelPayment(uuid, { from: supply });
         let d = (await token.balanceOf(demand)).toNumber();
         let s = (await token.balanceOf(supply)).toNumber();
-        assert.equal(d, 1000);
-        assert.equal(s, 1000);
+        assert.equal(d, 1010);
+        assert.equal(s, 990);
     });
 
 });
@@ -452,7 +452,7 @@ contract('BeePayments Arbitration Host Test', function (accounts) {
         await payments.disputePayment(uuid, {from : supply});
         let d = (await token.balanceOf(demand)).toNumber();
         let s = (await token.balanceOf(supply)).toNumber();
-        assert.equal(d, 920);
+        assert.equal(d, 930);
         assert.equal(s, 980);
     });
             
@@ -491,17 +491,17 @@ contract('BeePayments Arbitration Host Test', function (accounts) {
         await payments.disputePayment(uuid, {from: demand});
         let d = (await token.balanceOf(demand)).toNumber();
         let s = (await token.balanceOf(supply)).toNumber();
-        assert.equal(d, 910);
+        assert.equal(d, 920);
         assert.equal(s, 990);
         var arbBalance = (await token.balanceOf(arb)).toNumber();
-        assert.equal(arbBalance, 100);
+        assert.equal(arbBalance, 90);
         var payStruct = await payments.allPayments(uuid);
         var status = payStruct[1].toString(10);
         assert.equal(status, "3");
     });
 });
 
-contract('BeePayments Arbitration Host Test', function (accounts) {
+contract('BeePayments Arbitration Guest Test', function (accounts) {
     const owner = accounts[0];
     const user1 = accounts[1];
     const demand = accounts[2];
